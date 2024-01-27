@@ -1,0 +1,10 @@
+version: '3'
+services:
+  app:
+    build:
+      context: ./test-server
+      dockerfile: Dockerfile
+    ports:
+      - 51234:5000
+    environment:
+      - PYTHONUNBUFFERED=1
