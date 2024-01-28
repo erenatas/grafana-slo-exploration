@@ -2,13 +2,13 @@
 Main goal of this repo is to explore how Grafana SLO works
 
 ## Components
-This consists of TODO parts
+This consists of 5 parts
 
 - test-server
 - test-client
 - Grafana Agent
 - Prometheus (optional)
-- Grafana SLO configuration
+- Grafana configuration via Terraform
 
 ## Test Server
 It has 3 endpoints,
@@ -70,6 +70,11 @@ To demonstrate both, I have also created a Mimir setup which is defined in `dock
 100 * (1 - (sum(rate(app_request_count_total{job="app", http_status=~"(5..|429)"}[1m])) / sum(rate(app_request_count_total{job="app"}[1m]))))
 ```
 
+## Grafana Configuration via Terraform
+By following documentation (put the links on top of each TF file) I have done 2 steps:
+1. Add data source for `mimir` which I have created in compose
+2. Add SLO 
+
 ## First Impressions
 Positive side:
 - Grafana SLO allows you to generate SLI/SLOs within its web UI very easily. Specify success metric, total metric, window, SLO and that gets you:
@@ -94,7 +99,9 @@ You need:
 
 ### To get test stack running:
 1. Edit `targets` in `config/grafana-agent/config.river` to ensure grafana agent can reach out to test-server. You can verify after running compose and checking [Grafana Agent UI](http://localhost:51235/component/prometheus.scrape.app)
-2. Run compose by: `docker compose run`
+2. Run compose by: `docker compose up`
+
+Quick reminder, you need to generate traffic to get metrics. Follow on [Test Client](#test-client) for an example.
 
 ### To provision Grafana resources via Terraform:
 First, create `.env` file
