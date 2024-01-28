@@ -2,7 +2,7 @@
 Main goal of this repo is to explore how Grafana SLO works
 
 ## Components
-This consists of 5 parts
+This consists of 5 parts:
 
 - test-server
 - test-client
