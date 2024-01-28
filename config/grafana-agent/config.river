@@ -1,0 +1,23 @@
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// prometheus.scrape is the name of the component and "default" is its label.
+prometheus.scrape "app" {
+    scrape_interval = "10s"
+    // Tell the scraper to scrape at http://localhost:12345/metrics.
+    // The http:// and metrics are implied but able to be overwritten.
+    targets = [{"__address__" = "192.168.0.11:51234"}]
+    // Forward the scrape results to the receiver. In general,
+    // Flow uses forward_to to tell which receiver to send results to.
+    // The forward_to is an argument of prometheus.scrape.default and
+    // the receiver is an exported field of prometheus.remote_write.prom.
+    forward_to = [prometheus.remote_write.prom.receiver]
+}
+
+prometheus.remote_write "prom" {
+    endpoint {
+        url = "http://mimir:9009/api/v1/push"
+    }
+}

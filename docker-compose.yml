@@ -1,5 +1,23 @@
 version: '3'
 services:
+  mimir:
+    image: grafana/mimir:latest
+    volumes:
+      - ./config/mimir/demo.yaml:/etc/mimir/demo.yaml
+    command: --config.file=/etc/mimir/demo.yaml
+    ports:
+      - 9009:9009
+  grafana-agent:
+    image: grafana/agent:latest
+    volumes:
+      - ./config/grafana-agent/config.river:/etc/agent/config.river
+    command: run --server.http.listen-addr=0.0.0.0:51235 /etc/agent/config.river
+    environment:
+      - AGENT_MODE=flow
+    ports:
+      - 51235:51235
+    depends_on:
+      - mimir
   app:
     build:
       context: ./test-server
@@ -8,3 +26,5 @@ services:
       - 51234:5000
     environment:
       - PYTHONUNBUFFERED=1
+    depends_on:
+      - grafana-agent
