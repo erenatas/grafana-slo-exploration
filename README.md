@@ -17,7 +17,7 @@ It has 3 endpoints,
 - `/variable`: depending on request argument, responds 200, 500, or 200 with random latency (arguments: `type: ok`, `type: ko`, `type: late-ok`)
 
 ## Test Client
-Used [`oha`](https://github.com/hatoo/oha) to generate traffic:
+Used [`oha`](https://github.com/hatoo/oha) to generate synthetic traffic:
 ```bash
 oha -z 600min -q 200 http://127.0.0.1:51234
 oha -z 180sec -q 20 "http://127.0.0.1:51234/variable?type=ko"
@@ -78,13 +78,41 @@ Positive side:
 - Automatically generates Dashboard to see:
   - If Alerts are firing, Burn Rate alerts
   - SLI graph
-- Terraform provisioning for SLOs
+- Terraform provisioning for SLOs (and everything) and its fast, very fast.
 
 
 On the not so positive side (Or I haven't figured out yet)
-- Could not find a way to control remote_write frequency
+- Could not find a way to control remote_write frequency (on prometheus or in mimir)
 - Changes are reflected to SLI/SLO board quite late (~5 mins)
 - Self hosting Mimir looks quite complicated. Thankfully I found a demo container that runs it minimally, enough for demonstration.
+
+## How to get it working
+You need:
+- Grafana server that has SLO plugin (Grafana Cloud offers 2 weeks of trial as of writing)
+- Machine capable of running few containers
+- Docker Compose
+
+### To get test stack running:
+1. Edit `targets` in `config/grafana-agent/config.river` to ensure grafana agent can reach out to test-server. You can verify after running compose and checking [Grafana Agent UI](http://localhost:51235/component/prometheus.scrape.app)
+2. Run compose by: `docker compose run`
+
+### To provision Grafana resources via Terraform:
+First, create `.env` file
+```bash
+cd grafana-terraform
+cp .env.example .env
+```
+and replace variables with what is needed.
+
+I have generated `GRAFANA_AUTH_TOKEN` by going to `https://<username>.grafana.net/org/serviceaccounts`, created Service Account with Admin role and added **Service account token**.
+
+for running terraform, I have done:
+```bash
+terraform init
+terraform plan  -var-file=".env"
+terraform apply -var-file=".env"
+```
+
 
 ## References
 - [Exposing Python Metrics with Prometheus](https://medium.com/@letathenasleep/exposing-python-metrics-with-prometheus-c5c837c21e4d)
