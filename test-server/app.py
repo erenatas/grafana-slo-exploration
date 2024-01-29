@@ -55,7 +55,11 @@ def variable():
         REQUEST_LATENCY.labels('GET', '/variable').observe(time.time() - start_time)
         return response, 500
     if req_type == "late-ok":
-        time.sleep(random.randint(300, 2000)/1000)
+        rand_ms = random.randint(1, 50)
+        while (True):
+            cur_time = round(time.time() * 1000)
+            if cur_time - round(start_time * 1000) > rand_ms:
+                break
         REQUEST_COUNT.labels('GET', '/variable', 200).inc()
         response = jsonify(message='late-ok!')
         REQUEST_LATENCY.labels('GET', '/variable').observe(time.time() - start_time)

@@ -23,13 +23,6 @@ oha -z 600min -q 200 http://127.0.0.1:51234
 oha -z 180sec -q 20 "http://127.0.0.1:51234/variable?type=ko"
 ```
 
-## Grafana Agent configuration
-This agent is very similar to Prometheus agent, it allows you collect more than metrics but also logging and tracing data (I believe its also used for profiling data). To demonstrate Grafana SLO I have only added fetching metrics from `http://app:51234/metrics` and remote write to Self hosted Mimir.
-
-For this demo, I have chosen to test [Grafana Agent's Flow mode](https://grafana.com/docs/agent/latest/flow/) which uses "river" files, yet another xyz. Basically a river file consists of components. Components that can be defined are documented in [Flow mode Reference page](https://grafana.com/docs/agent/latest/flow/reference/components/) (For example [`prometheus.scrape`](https://grafana.com/docs/agent/latest/flow/reference/components/prometheus.scrape/)).
-
-> One problem I had with Grafana Agent is, it's quirky when it comes to hostname resolution that should have come from compose, it did not accept `http://app:51234/metrics`. Probably it could work if I would have created a separate network with Compose, but I just used forwarded port from my localhost IP instead.
-
 ## Prometheus configuration
 For isolation aspects, I have decided to run prometheus in a separate host, in this case it will be a Raspberry Pi, its hostname is `rpi`. Hostname of the server that will run `test-server` is `nobara`.
 
@@ -69,6 +62,14 @@ To demonstrate both, I have also created a Mimir setup which is defined in `dock
 # Sample for availability with Prometheus
 100 * (1 - (sum(rate(app_request_count_total{job="app", http_status=~"(5..|429)"}[1m])) / sum(rate(app_request_count_total{job="app"}[1m]))))
 ```
+
+
+## Grafana Agent configuration
+This agent is very similar to Prometheus agent, it allows you collect more than metrics but also logging and tracing data (I believe its also used for profiling data). To demonstrate Grafana SLO I have only added fetching metrics from `http://app:51234/metrics` and remote write to Self hosted Mimir.
+
+For this demo, I have chosen to test [Grafana Agent's Flow mode](https://grafana.com/docs/agent/latest/flow/) which uses "river" files, yet another xyz. Basically a river file consists of components. Components that can be defined are documented in [Flow mode Reference page](https://grafana.com/docs/agent/latest/flow/reference/components/) (For example [`prometheus.scrape`](https://grafana.com/docs/agent/latest/flow/reference/components/prometheus.scrape/)).
+
+> One problem I had with Grafana Agent is, it's quirky when it comes to hostname resolution that should have come from compose, it did not accept `http://app:51234/metrics`. Probably it could work if I would have created a separate network with Compose, but I just used forwarded port from my localhost IP instead.
 
 ## Grafana Configuration via Terraform
 By following documentation (put the links on top of each TF file) I have done 2 steps:
@@ -121,7 +122,38 @@ terraform apply -var-file=".env"
 ```
 
 
+Quick demonstration:
+```bash
+# Step 1:
+sudo docker compose up -d
+oha -z 600min -q 100 http://127.0.0.1:51234
+# In new shell
+oha -z 600min -q 100 "http://127.0.0.1:51234/variable?type=ok"
+# Step 2:
+# In new shell
+oha -z 5sec -q 20 "http://127.0.0.1:51234/variable?type=ko" # To have metrics for availability
+# Wait for 10mins
+
+# Step 3: Reinitialize Terraform
+pushd grafana-terraform
+terraform destroy -var-file=".env"
+terraform plan -var-file=".env"
+terraform apply -var-file=".env"
+popd
+
+# Simulate latency issues - In new shell
+oha -z 60sec -q 100 "http://127.0.0.1:51234/variable?type=late-ok"
+
+# Simulate errors - In new shell
+oha -z 600min -q 100 "http://127.0.0.1:51234/variable?type=ko"
+```
+
+## Testing
+~3m45s 200 rpm ok 50ko (first change on SLI graph) 
+~4m Alerts fired
+~6m45s SLI dropped below SLO
+~
+
 ## References
 - [Exposing Python Metrics with Prometheus](https://medium.com/@letathenasleep/exposing-python-metrics-with-prometheus-c5c837c21e4d)
 - [Get started with Grafana Mimir](https://grafana.com/docs/mimir/latest/get-started/#configure-prometheus-to-write-to-grafana-mimir)
-
